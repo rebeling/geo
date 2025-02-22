@@ -3,29 +3,105 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Geolocation Test</title>
+    <title>Real-Time Location & Nearby Objects</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; padding: 20px; }
+        #info { margin-bottom: 20px; }
+        .object { display: inline-block; padding: 10px; margin: 5px; border: 1px solid black; border-radius: 5px; }
+    </style>
 </head>
 <body>
-    <h1>Geolocation Test on GitHub Pages</h1>
-    <button onclick="getLocation()">Get My Location</button>
-    <p id="location"></p>
+
+    <h2>Real-Time Location & Nearby Objects</h2>
+    <div id="info">
+        <p><b>Your Coordinates:</b> <span id="my-coordinates">Fetching...</span></p>
+    </div>
+
+    <h3>Nearby Objects (Within 5m):</h3>
+    <div id="objects-container"></div>
 
     <script>
+        let lastLat = null;
+        let lastLon = null;
+
         function getLocation() {
-            if ("geolocation" in navigator) {
-                navigator.geolocation.getCurrentPosition(
-                    (position) => {
-                        document.getElementById("location").innerHTML =
-                            `Latitude: ${position.coords.latitude}, Longitude: ${position.coords.longitude}`;
-                    },
-                    (error) => {
-                        document.getElementById("location").innerHTML = `Error: ${error.message}`;
-                    }
-                );
+            if (navigator.geolocation) {
+                navigator.geolocation.watchPosition(updatePosition, showError, {
+                    enableHighAccuracy: true,
+                    maximumAge: 0,
+                    timeout: 5000
+                });
             } else {
-                document.getElementById("location").innerHTML = "Geolocation is not supported by this browser.";
+                document.getElementById("my-coordinates").innerText = "Geolocation is not supported by your browser.";
             }
         }
+
+        function updatePosition(position) {
+            const myLat = position.coords.latitude;
+            const myLon = position.coords.longitude;
+
+            // Prevent unnecessary updates if the position hasn't changed
+            if (myLat === lastLat && myLon === lastLon) return;
+            lastLat = myLat;
+            lastLon = myLon;
+
+            // Display real coordinates
+            document.getElementById("my-coordinates").innerText = `Lat: ${myLat.toFixed(6)}, Lon: ${myLon.toFixed(6)}`;
+
+            // Generate objects within 5m
+            generateNearbyObjects(myLat, myLon);
+        }
+
+        function generateNearbyObjects(myLat, myLon) {
+            const container = document.getElementById("objects-container");
+            container.innerHTML = ""; // Clear previous objects
+
+            const numObjects = 3; // Number of nearby objects
+            const maxDistanceMeters = 5; // Maximum distance from user in meters
+
+            for (let i = 0; i < numObjects; i++) {
+                // Generate random small offset in meters
+                const offsetX = (Math.random() - 0.5) * maxDistanceMeters;
+                const offsetY = (Math.random() - 0.5) * maxDistanceMeters;
+
+                // Convert meters to latitude/longitude offsets
+                const earthRadius = 6371000; // Earth radius in meters
+                const newLat = myLat + (offsetY / earthRadius) * (180 / Math.PI);
+                const newLon = myLon + (offsetX / (earthRadius * Math.cos(Math.PI * myLat / 180))) * (180 / Math.PI);
+
+                // Calculate relative distance
+                const distance = Math.sqrt(offsetX ** 2 + offsetY ** 2).toFixed(2);
+
+                // Display object info
+                const objDiv = document.createElement("div");
+                objDiv.className = "object";
+                objDiv.innerHTML = `<b>Object ${i + 1}</b><br>Relative Position: X: ${offsetX.toFixed(2)}m, Y: ${offsetY.toFixed(2)}m<br>Distance: ${distance}m<br>Lat: ${newLat.toFixed(6)}, Lon: ${newLon.toFixed(6)}`;
+                container.appendChild(objDiv);
+            }
+        }
+
+        function showError(error) {
+            let message = "";
+            switch (error.code) {
+                case error.PERMISSION_DENIED:
+                    message = "User denied location access.";
+                    break;
+                case error.POSITION_UNAVAILABLE:
+                    message = "Location information unavailable.";
+                    break;
+                case error.TIMEOUT:
+                    message = "Request timed out.";
+                    break;
+                case error.UNKNOWN_ERROR:
+                    message = "An unknown error occurred.";
+                    break;
+            }
+            document.getElementById("my-coordinates").innerText = message;
+        }
+
+        // Start tracking location in real time
+        getLocation();
     </script>
+
 </body>
 </html>
