@@ -9,8 +9,8 @@
         canvas { border: 1px solid black; background-color: white; margin-top: 10px; }
         #info { margin-bottom: 10px; }
         #controls button { margin: 5px; padding: 5px 10px; }
-        .floor-button { background-color: lightgray; padding: 5px 15px; border: 1px solid black; cursor: pointer; }
-        .floor-button.active { background-color: green; color: white; }
+        .floor-button { opacity: 0.2; padding: 5px 15px; border: 1px solid black; cursor: pointer; }
+        .floor-button.active { opacity: 1}
     </style>
 </head>
 <body>
@@ -25,11 +25,11 @@
         </div>
 
         <div id="floor-controls">
-            <button class="floor-button" onclick="setFloor(1)">1</button>
-            <button class="floor-button" onclick="setFloor(2)">2</button>
-            <button class="floor-button" onclick="setFloor(3)">3</button>
-            <button class="floor-button" onclick="setFloor(4)">4</button>
-            <button class="floor-button active" onclick="setFloor(5)">5</button>
+            <button id="floor-1" class="floor-button" onclick="setFloor(1)">1</button>
+            <button id="floor-2" class="floor-button" onclick="setFloor(2)">2</button>
+            <button id="floor-3" class="floor-button" onclick="setFloor(3)">3</button>
+            <button id="floor-4" class="floor-button" onclick="setFloor(4)">4</button>
+            <button id="floor-5" class="floor-button active" onclick="setFloor(5)">5</button>
         </div>
     </div>
 
@@ -76,6 +76,9 @@
             ]
         };
 
+        //const floorColors = ["#D0E8FF", "#B0D0FF", "#90C0FF", "#70B0FF", "#50A0FF"];
+        const floorColors = ["#fff3e9", "#fff3e9", "#b5d6bb", "#e8d1d3", "#b9e7ec"];
+
         // Example longitude and latitude coordinates for the floor plan
         const floorPlanCoordinates = [
             [13.364100, 52.288100], // Point 1
@@ -85,6 +88,12 @@
             [13.430000, 52.380000], // Point 5
             [13.355000, 52.390000]  // Closing the shape
         ];
+
+        function applyButtonColors() {
+            document.querySelectorAll(".floor-button").forEach((button, index) => {
+                button.style.backgroundColor = floorColors[index];
+            });
+        }
 
         async function loadObjects() {
             try {
@@ -148,7 +157,7 @@
         }
 
         function drawFloorPlan() {
-            ctx.fillStyle = "lightblue";
+            ctx.fillStyle = floorColors[currentFloor - 1];
             ctx.beginPath();
             const canvasCoords = convertCoordinatesToCanvas(floorPlanCoordinates);
             ctx.moveTo(canvasCoords[0].x, canvasCoords[0].y);
@@ -250,6 +259,7 @@
         });
 
 
+        applyButtonColors();
         getLocation();
         loadObjects();
         setInterval(updateMovingObject, 1000);
