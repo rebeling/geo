@@ -64,7 +64,7 @@
         }
         #legend {
             position: absolute;
-            bottom: 10px;
+            bottom: 100px;
             left: 10px;
             background: white;
             padding: 5px;
@@ -84,8 +84,8 @@
         <div id="coordinates">Lat: -, Lon: -</div>
         <div id="userMarker" class="marker"></div>
         <div id="zoom-controls">
-            <button onclick="zoomIn()">+</button>
-            <button onclick="zoomOut()">-</button>
+            <button onclick="zoomIn(event)">+</button>
+            <button onclick="zoomOut(event)">-</button>
         </div>
         <div id="legend">5m scale<div></div></div>
     </div>
@@ -94,49 +94,53 @@
         let coordinatesDisplay = document.getElementById("coordinates");
         let map = document.getElementById("map");
         let zoomLevel = 1;
-        let scale = 5; // Assuming 5m scale for visualization
+        let centerLat = 52.0, centerLon = 13.0;
 
         function updateUserLocation(position) {
-            let lat = position.coords.latitude;
-            let lon = position.coords.longitude;
+            centerLat = position.coords.latitude;
+            centerLon = position.coords.longitude;
             let x = map.clientWidth / 2;
             let y = map.clientHeight / 2;
             userMarker.style.left = `${x}px`;
             userMarker.style.top = `${y}px`;
-            coordinatesDisplay.textContent = `Lat: ${lat.toFixed(6)}, Lon: ${lon.toFixed(6)}`;
+            coordinatesDisplay.textContent = `Lat: ${centerLat.toFixed(6)}, Lon: ${centerLon.toFixed(6)}`;
         }
 
         function handleError(error) {
             console.log("Error getting location", error);
         }
 
-        function placeObject(x, y, lat, lon) {
-            let relativeX = x - map.clientWidth / 2;
-            let relativeY = y - map.clientHeight / 2;
-            let adjustedX = map.clientWidth / 2 + relativeX * zoomLevel;
-            let adjustedY = map.clientHeight / 2 + relativeY * zoomLevel;
+        function placeObject(x, y) {
+            let relativeX = (x - map.clientWidth / 2) / zoomLevel;
+            let relativeY = (y - map.clientHeight / 2) / zoomLevel;
+            let latOffset = relativeY * 0.00005;
+            let lonOffset = relativeX * 0.00005;
+            let lat = centerLat + latOffset;
+            let lon = centerLon + lonOffset;
 
             let objectMarker = document.createElement("div");
             objectMarker.className = "object-marker";
-            objectMarker.style.left = `${adjustedX}px`;
-            objectMarker.style.top = `${adjustedY}px`;
+            objectMarker.style.left = `${x}px`;
+            objectMarker.style.top = `${y}px`;
 
             let objectLabel = document.createElement("div");
             objectLabel.className = "object-label";
-            objectLabel.style.left = `${adjustedX}px`;
-            objectLabel.style.top = `${adjustedY - 15}px`;
+            objectLabel.style.left = `${x}px`;
+            objectLabel.style.top = `${y - 15}px`;
             objectLabel.textContent = `Lat: ${lat.toFixed(6)}, Lon: ${lon.toFixed(6)}`;
 
             map.appendChild(objectMarker);
             map.appendChild(objectLabel);
         }
 
-        function zoomIn() {
+        function zoomIn(event) {
+            event.stopPropagation();
             zoomLevel *= 1.2;
             updateLegend();
         }
 
-        function zoomOut() {
+        function zoomOut(event) {
+            event.stopPropagation();
             zoomLevel /= 1.2;
             updateLegend();
         }
@@ -150,9 +154,7 @@
             let rect = map.getBoundingClientRect();
             let x = e.clientX - rect.left;
             let y = e.clientY - rect.top;
-            let lat = (y / map.clientHeight) * 180 - 90;
-            let lon = (x / map.clientWidth) * 360 - 180;
-            placeObject(x, y, lat, lon);
+            placeObject(x, y);
         });
 
         if (navigator.geolocation) {
