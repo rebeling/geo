@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Interactive Map</title>
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+        #map {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+            background: lightgray;
+        }
+        .marker {
+            width: 20px;
+            height: 20px;
+            background: red;
+            position: absolute;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+        }
+        .object-marker {
+            width: 20px;
+            height: 20px;
+            background: blue;
+            position: absolute;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+        }
+        .object-label {
+            position: absolute;
+            background: white;
+            padding: 2px 5px;
+            font-size: 12px;
+            border-radius: 3px;
+            transform: translate(-50%, -100%);
+        }
+        #coordinates {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: white;
+            padding: 5px;
+            border-radius: 5px;
+            font-family: Arial, sans-serif;
+        }
+        #zoom-controls {
+            position: absolute;
+            top: 50px;
+            left: 10px;
+            display: flex;
+            flex-direction: column;
+        }
+        #zoom-controls button {
+            margin: 2px;
+            padding: 5px;
+        }
+        #legend {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            background: white;
+            padding: 5px;
+            border-radius: 5px;
+            font-size: 12px;
+        }
+        #legend div {
+            width: 50px;
+            height: 2px;
+            background: black;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div id="map">
+        <div id="coordinates">Lat: -, Lon: -</div>
+        <div id="userMarker" class="marker"></div>
+        <div id="zoom-controls">
+            <button onclick="zoomIn()">+</button>
+            <button onclick="zoomOut()">-</button>
+        </div>
+        <div id="legend">5m scale<div></div></div>
+    </div>
+    <script>
+        let userMarker = document.getElementById("userMarker");
+        let coordinatesDisplay = document.getElementById("coordinates");
+        let map = document.getElementById("map");
+        let zoomLevel = 1;
+        let scale = 5; // Assuming 5m scale for visualization
+
+        function updateUserLocation(position) {
+            let lat = position.coords.latitude;
+            let lon = position.coords.longitude;
+            let x = map.clientWidth / 2;
+            let y = map.clientHeight / 2;
+            userMarker.style.left = `${x}px`;
+            userMarker.style.top = `${y}px`;
+            coordinatesDisplay.textContent = `Lat: ${lat.toFixed(6)}, Lon: ${lon.toFixed(6)}`;
+        }
+
+        function handleError(error) {
+            console.log("Error getting location", error);
+        }
+
+        function placeObject(x, y, lat, lon) {
+            let relativeX = x - map.clientWidth / 2;
+            let relativeY = y - map.clientHeight / 2;
+            let adjustedX = map.clientWidth / 2 + relativeX * zoomLevel;
+            let adjustedY = map.clientHeight / 2 + relativeY * zoomLevel;
+
+            let objectMarker = document.createElement("div");
+            objectMarker.className = "object-marker";
+            objectMarker.style.left = `${adjustedX}px`;
+            objectMarker.style.top = `${adjustedY}px`;
+
+            let objectLabel = document.createElement("div");
+            objectLabel.className = "object-label";
+            objectLabel.style.left = `${adjustedX}px`;
+            objectLabel.style.top = `${adjustedY - 15}px`;
+            objectLabel.textContent = `Lat: ${lat.toFixed(6)}, Lon: ${lon.toFixed(6)}`;
+
+            map.appendChild(objectMarker);
+            map.appendChild(objectLabel);
+        }
+
+        function zoomIn() {
+            zoomLevel *= 1.2;
+            updateLegend();
+        }
+
+        function zoomOut() {
+            zoomLevel /= 1.2;
+            updateLegend();
+        }
+
+        function updateLegend() {
+            let legendDiv = document.querySelector("#legend div");
+            legendDiv.style.width = `${50 * zoomLevel}px`;
+        }
+
+        map.addEventListener("click", function(e) {
+            let rect = map.getBoundingClientRect();
+            let x = e.clientX - rect.left;
+            let y = e.clientY - rect.top;
+            let lat = (y / map.clientHeight) * 180 - 90;
+            let lon = (x / map.clientWidth) * 360 - 180;
+            placeObject(x, y, lat, lon);
+        });
+
+        if (navigator.geolocation) {
+            navigator.geolocation.watchPosition(updateUserLocation, handleError, {
+                enableHighAccuracy: true
+            });
+        } else {
+            alert("Geolocation is not supported by this browser.");
+        }
+    </script>
+</body>
+</html>
